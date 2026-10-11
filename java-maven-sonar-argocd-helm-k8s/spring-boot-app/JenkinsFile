@@ -33,25 +33,24 @@ pipeline {
   environment {
     DOCKER_IMAGE = "iamshashank369/ultimate-cicd:${BUILD_NUMBER}"
     REGISTRY_CREDENTIALS = credentials('docker-cred')
-    // Prepend the path globally for all commands inside this stage
-    PATH = "/usr/local/bin:${env.PATH}"
   }
   steps {
     script {
-        // 1. Build the image using the working binary path
-        sh 'cd java-maven-sonar-argocd-helm-k8s/spring-boot-app && docker build -t ${DOCKER_IMAGE} .'
+        // 1. Build using the absolute path to the working binary
+        sh 'cd java-maven-sonar-argocd-helm-k8s/spring-boot-app && /usr/local/bin/docker build -t ${DOCKER_IMAGE} .'
         
-        // 2. Login to Docker Hub using your credentials environment variables
-        sh 'echo "${REGISTRY_CREDENTIALS_PSW}" | docker login -u "${REGISTRY_CREDENTIALS_USR}" --password-stdin'
+        // 2. Login using the absolute path binary
+        sh 'echo "${REGISTRY_CREDENTIALS_PSW}" | /usr/local/bin/docker login -u "${REGISTRY_CREDENTIALS_USR}" --password-stdin'
         
-        // 3. Push the image to the repository
-        sh 'docker push ${DOCKER_IMAGE}'
+        // 3. Push using the absolute path binary
+        sh '/usr/local/bin/docker push ${DOCKER_IMAGE}'
         
-        // 4. Clean up login credentials from the local layer
-        sh 'docker logout'
+        // 4. Logout to clean up credentials safely
+        sh '/usr/local/bin/docker logout'
     }
   }
 }
+
 
     stage('Update Deployment File') {
         environment {
