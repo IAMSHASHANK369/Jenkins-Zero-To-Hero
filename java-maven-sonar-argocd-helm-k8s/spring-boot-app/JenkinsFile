@@ -36,17 +36,22 @@ pipeline {
   }
   steps {
     script {
-        // 1. Build using the absolute path to the working binary
-        sh 'cd java-maven-sonar-argocd-helm-k8s/spring-boot-app && /usr/local/bin/docker build -t ${DOCKER_IMAGE} .'
+        // 1. Download the safe, pre-compiled static Docker CLI binary directly into the workspace folder
+        sh 'curl -fsSL https://docker.com -o docker-cli.tgz'
+        sh 'tar -xzvf docker-cli.tgz --strip-components=1 docker/docker'
+        sh 'chmod +x docker'
+
+        // 2. Build using the local working workspace binary
+        sh 'cd java-maven-sonar-argocd-helm-k8s/spring-boot-app && ../../docker build -t ${DOCKER_IMAGE} .'
         
-        // 2. Login using the absolute path binary
-        sh 'echo "${REGISTRY_CREDENTIALS_PSW}" | /usr/local/bin/docker login -u "${REGISTRY_CREDENTIALS_USR}" --password-stdin'
+        // 3. Login using the local working workspace binary
+        sh 'echo "${REGISTRY_CREDENTIALS_PSW}" | ./docker login -u "${REGISTRY_CREDENTIALS_USR}" --password-stdin'
         
-        // 3. Push using the absolute path binary
-        sh '/usr/local/bin/docker push ${DOCKER_IMAGE}'
+        // 4. Push using the local working workspace binary
+        sh './docker push ${DOCKER_IMAGE}'
         
-        // 4. Logout to clean up credentials safely
-        sh '/usr/local/bin/docker logout'
+        // 5. Cleanup the sensitive local login and installer states
+        sh './docker logout && rm -f docker docker-cli.tgz'
     }
   }
 }
