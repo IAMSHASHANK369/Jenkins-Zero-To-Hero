@@ -29,25 +29,30 @@ pipeline {
   }
   steps {
     script {
-        // 1. Download the safe, pre-compiled static Docker CLI binary directly into the workspace folder
-        sh 'curl -fsSL https://docker.com -o docker-cli.tgz'
-        sh 'tar -xzvf docker-cli.tgz --strip-components=1 docker/docker'
-        sh 'chmod +x docker'
+        // 1. Download the native package archive using the system tools
+        sh 'apt-get update && apt-get download docker-cli'
+        
+        // 2. Extract the binary directly into the current execution folder
+        sh 'dpkg-deb -x docker-cli_*.deb .'
+        
+        // 3. Clear out the package archive artifact to keep the folder clean
+        sh 'rm -f docker-cli_*.deb'
 
-        // 2. Build using the local working workspace binary
-        sh 'cd java-maven-sonar-argocd-helm-k8s/spring-boot-app && ../../docker build -t ${DOCKER_IMAGE} .'
+        // 4. Compile the target image using the working localized binary path
+        sh 'cd java-maven-sonar-argocd-helm-k8s/spring-boot-app && ../../usr/bin/docker build -t ${DOCKER_IMAGE} .'
         
-        // 3. Login using the local working workspace binary
-        sh 'echo "${REGISTRY_CREDENTIALS_PSW}" | ./docker login -u "${REGISTRY_CREDENTIALS_USR}" --password-stdin'
+        // 5. Connect to the remote image registry using the localized path configuration
+        sh 'echo "${REGISTRY_CREDENTIALS_PSW}" | ./usr/bin/docker login -u "${REGISTRY_CREDENTIALS_USR}" --password-stdin'
         
-        // 4. Push using the local working workspace binary
-        sh './docker push ${DOCKER_IMAGE}'
+        // 6. Upload the image to your repository
+        sh './usr/bin/docker push ${DOCKER_IMAGE}'
         
-        // 5. Cleanup the sensitive local login and installer states
-        sh './docker logout && rm -f docker docker-cli.tgz'
+        // 7. Disconnect and clean up session states safely
+        sh './usr/bin/docker logout && rm -rf usr'
     }
   }
 }
+
 
     stage('Update Deployment File') {
         environment {
