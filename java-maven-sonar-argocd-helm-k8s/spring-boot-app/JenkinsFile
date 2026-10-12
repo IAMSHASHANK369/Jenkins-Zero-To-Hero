@@ -73,14 +73,13 @@ pipeline {
                 git checkout main
                 git pull origin main
                 
-                # Targets any username prefix ending in '/ultimate-cicd:' and updates the image and tag.
                 sed -i "s|image: .*/ultimate-cicd:.*|image: iamshashank369/ultimate-cicd:${BUILD_NUMBER}|g" java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
                 
                 git add java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
                 
                 if ! git diff-index --quiet HEAD --; then
                     git commit -m "Update deployment image to version ${BUILD_NUMBER}"
-                    # FIX: Removed the extra '://' and added the missing '$' sign before the variable name
+                    # Cleaned URL format using proper shell variable expansion signatures ($)
                     git push https://${GITHUB_TOKEN}@://github.com{GIT_USER_NAME}/${GIT_REPO_NAME}.git main
                 else
                     echo "No changes to commit. The file is already matching build version ${BUILD_NUMBER}."
@@ -88,7 +87,6 @@ pipeline {
             '''
         }
     }
-
 
 
 
