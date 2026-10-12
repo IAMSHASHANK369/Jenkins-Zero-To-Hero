@@ -59,27 +59,44 @@ pipeline {
     }
   }
 }
-
-
-
-    stage('Update Deployment File') {
-        environment {
-            GIT_REPO_NAME = "Jenkins-Zero-To-Hero"
-            GIT_USER_NAME = "iamshashank369"
-        }
-        steps {
-            withCredentials([string(credentialsId: 'github-cred', variable: 'GITHUB_TOKEN')]) {
-                sh '''
-                    git config user.email "shashank.xyz@gmail.com"
-                    git config user.name "shashank mittapalli"
-                    BUILD_NUMBER=${BUILD_NUMBER}
-                    sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
-                    git add java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
+  stage('Update Deployment File') {
+    environment {
+        GIT_REPO_NAME = "Jenkins-Zero-To-Hero"
+        GIT_USER_NAME = "iamshashank369"
+    }
+    steps {
+        withCredentials([string(credentialsId: 'github-cred', variable: 'GITHUB_TOKEN')]) {
+            sh '''
+                # 1. Set user context
+                git config user.email "shashank.xyz@gmail.com"
+                git config user.name "shashank mittapalli"
+                
+                # 2. Checkout main branch to fix the detached HEAD state
+                git checkout main
+                
+                # 3. Pull latest changes to avoid conflicts
+                git pull origin main
+                
+                # 4. Replace the tag in the deployment file
+                sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
+                
+                # 5. Stage the modified file
+                git add java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
+                
+                # 6. Commit and Push ONLY if changes were actually made
+                if ! git diff-index --quiet HEAD --; then
                     git commit -m "Update deployment image to version ${BUILD_NUMBER}"
-                    git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
-                '''
-            }
+                    git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME}.git main
+                else
+                    echo "No changes to commit. The tag might have already been updated."
+                fi
+            '''
         }
+    }
+
+
+
+    
     }
   }
 }
