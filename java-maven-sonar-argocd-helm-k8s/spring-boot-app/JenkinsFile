@@ -59,36 +59,34 @@ pipeline {
     }
   }
 }
-  stage('Update Deployment File') {
+ stage('Update Deployment File') { // <-- Open Stage (Brace #1)
     environment {
         GIT_REPO_NAME = "Jenkins-Zero-To-Hero"
         GIT_USER_NAME = "iamshashank369"
     }
-    steps {
-        withCredentials([string(credentialsId: 'github-cred', variable: 'GITHUB_TOKEN')]) {
-            sh '''
+    steps { // <-- Open Steps (Brace #2)
+        withCredentials([string(credentialsId: 'github-cred', variable: 'GITHUB_TOKEN')]) { // <-- Open Credentials (Brace #3)
+            sh """
                 git config user.email "shashank.xyz@gmail.com"
                 git config user.name "shashank mittapalli"
                 
                 git checkout main
                 git pull origin main
                 
-                sed -i "s|image: .*/ultimate-cicd:.*|image: iamshashank369/ultimate-cicd:${BUILD_NUMBER}|g" java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
+                sed -i "s|image: .*/ultimate-cicd:.*|image: iamshashank369/ultimate-cicd:\${BUILD_NUMBER}|g" java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
                 
                 git add java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
                 
                 if ! git diff-index --quiet HEAD --; then
-                    git commit -m "Update deployment image to version ${BUILD_NUMBER}"
-                    # Cleaned URL format using proper shell variable expansion signatures ($)
-                    git push https://${GITHUB_TOKEN}@://github.com{GIT_USER_NAME}/${GIT_REPO_NAME}.git main
+                    git commit -m "Update deployment image to version \${BUILD_NUMBER}"
+                    git push https://\${GITHUB_TOKEN}@://github.com\${GIT_USER_NAME}/\${GIT_REPO_NAME}.git main
                 else
-                    echo "No changes to commit. The file is already matching build version ${BUILD_NUMBER}."
+                    echo "No changes to commit."
                 fi
-            '''
-        }
-    }
-
-
+            """
+        } // <-- Closes withCredentials (Brace #3)
+    } // <-- Closes steps (Brace #2)
+} // <-- Closes stage (Brace #1)
 
 
 
