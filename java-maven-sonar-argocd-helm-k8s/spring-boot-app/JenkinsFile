@@ -32,7 +32,7 @@ pipeline {
         // 1. Download the native Ubuntu docker.io package archive
         sh 'apt-get update && apt-get download docker.io'
         
-        // 2. Extract the binary directly into the workspace folder(s)
+        // 2. Extract the binary directly into the workspace folders
         sh 'dpkg-deb -x docker.io_*.deb .'
         
         // 3. Clear out the package archive file to keep the directory clean
